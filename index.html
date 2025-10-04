@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Crop Recommendation</title>
+  <style>
+    body { margin:0; font-family:Arial,sans-serif; background:#f8fff8; color:#333; }
+    header { background:#2e7d32; color:white; padding:1rem; text-align:center; }
+    nav { display:flex; justify-content:space-around; background:#e0e0e0; }
+    nav button { flex:1; padding:1rem; border:none; background:transparent; font-size:1rem; cursor:pointer; }
+    nav button.active { background:#a5d6a7; font-weight:bold; }
+    main { padding:1rem; }
+    .page { display:none; animation:fadeIn 0.3s ease-in-out; }
+    .page.active { display:block; }
+    .card { background:white; padding:1rem; margin:1rem 0; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    label { display:block; margin-top:0.5rem; }
+    input, select { width:100%; padding:0.5rem; margin-top:0.3rem; }
+    button { margin-top:1rem; padding:0.7rem 1.2rem; border:none; border-radius:5px; background:#2e7d32; color:white; cursor:pointer; }
+    button:hover { background:#1b5e20; }
+    .big-icon { font-size:4rem; color:#2e7d32; text-align:center; }
+    @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌾 AI Crop Recommendation</h1>
+  </header>
+
+  <nav>
+    <button id="tab-dashboard" class="active">Dashboard</button>
+    <button id="tab-fields">Fields</button>
+    <button id="tab-camera">Camera</button>
+    <button id="tab-assistant">Assistant</button>
+    <button id="tab-history">History</button>
+  </nav>
+
+  <main>
+    <!-- Dashboard -->
+    <section id="page-dashboard" class="page active">
+      <div class="card">
+        <h2>Enter Soil & Weather Data</h2>
+        <form id="recommend-form">
+          <label>Soil pH:
+            <input type="number" step="0.1" id="ph" required>
+          </label>
+          <label>Moisture (%):
+            <input type="number" step="0.1" id="moisture" required>
+          </label>
+          <label>Rainfall (mm):
+            <input type="number" step="0.1" id="rainfall" required>
+          </label>
+          <label>Temperature (°C):
+            <input type="number" step="0.1" id="temperature" required>
+          </label>
+          <button type="submit">Get Recommendations</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Recommended Crops</h2>
+        <ul id="crop-list"><li>No data yet</li></ul>
+      </div>
+    </section>
+
+    <!-- Fields -->
+    <section id="page-fields" class="page">
+      <div class="card">
+        <h2>My Farm - 2.5 ha</h2>
+        <p>Soil pH: 6.8 | Moisture: 22%</p>
+        <button onclick="alert('Add new field coming soon...')">➕ Add Field</button>
+      </div>
+    </section>
+
+    <!-- Camera -->
+    <section id="page-camera" class="page">
+      <div class="big-icon">📷</div>
+      <h2 style="text-align:center">Capture Plant Photo</h2>
+      <p style="text-align:center">Disease detection feature coming soon...</p>
+      <div style="text-align:center; margin-top:1rem;">
+        <button onclick="alert('Camera access not yet implemented')">Open Camera</button>
+      </div>
+    </section>
+
+    <!-- Assistant -->
+    <section id="page-assistant" class="page">
+      <div class="big-icon">💬</div>
+      <h2 style="text-align:center">Farming Assistant</h2>
+      <p style="text-align:center">Ask questions about your crops here.</p>
+      <div style="text-align:center; margin-top:1rem;">
+        <button onclick="alert('Chatbot coming soon...')">Start Chat</button>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section id="page-history" class="page">
+      <div class="card">
+        <h2>Past Recommendations</h2>
+        <label>Search by crop:</label>
+        <input type="text" id="search-crop" placeholder="Type crop name...">
+
+        <label>Filter by crop type:</label>
+        <select id="filter-crop">
+          <option value="">All Crops</option>
+          <option value="Rice">Rice</option>
+          <option value="Maize">Maize</option>
+          <option value="Groundnut">Groundnut</option>
+          <option value="Millet">Millet</option>
+        </select>
+
+        <ul id="history-list"><li>No history yet</li></ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Tab switching
+    const tabs = document.querySelectorAll("nav button");
+    const pages = document.querySelectorAll(".page");
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        pages.forEach(p => p.classList.remove("active"));
+        tab.classList.add("active");
+        pages[index].classList.add("active");
+
+        if (tab.id === "tab-history") {
+          loadHistory();
+        }
+      });
+    });
+
+    // Handle recommendation form submit
+    document.getElementById("recommend-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const ph = parseFloat(document.getElementById("ph").value);
+      const moisture = parseFloat(document.getElementById("moisture").value);
+      const rainfall = parseFloat(document.getElementById("rainfall").value);
+      const temperature = parseFloat(document.getElementById("temperature").value);
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ph, moisture, rainfall, temperature })
+        });
+        const data = await res.json();
+        const list = document.getElementById("crop-list");
+        list.innerHTML = "";
+        data.forEach(crop => {
+          const li = document.createElement("li");
+          li.textContent = `${crop.name} - Yield: ${crop.yield_estimate} - Profit: ${crop.profit}`;
+          list.appendChild(li);
+        });
+      } catch (err) {
+        alert("Error fetching recommendations");
+        console.error(err);
+      }
+    });
+
+    // Load history with filtering
+    async function loadHistory() {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/history");
+        const data = await res.json();
+        renderHistory(data);
+
+        // Event listeners for search/filter
+        document.getElementById("search-crop").addEventListener("input", () => renderHistory(data));
+        document.getElementById("filter-crop").addEventListener("change", () => renderHistory(data));
+      } catch (err) {
+        console.error(err);
+        document.getElementById("history-list").innerHTML = "<li>Error loading history</li>";
+      }
+    }
+
+    // Render history with applied filters
+    function renderHistory(data) {
+      const searchText = document.getElementById("search-crop").value.toLowerCase();
+      const filterCrop = document.getElementById("filter-crop").value;
+
+      const list = document.getElementById("history-list");
+      list.innerHTML = "";
+
+      const filtered = data.filter(item => {
+        const matchesSearch = item.crop.toLowerCase().includes(searchText);
+        const matchesFilter = filterCrop ? item.crop === filterCrop : true;
+        return matchesSearch && matchesFilter;
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = "<li>No matching records</li>";
+        return;
+      }
+
+      filtered.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `Crop: ${item.crop} | pH: ${item.ph}, Moisture: ${item.moisture}, Rainfall: ${item.rainfall}, Temp: ${item.temperature} | Yield: ${item.yield_estimate} | Profit: ${item.profit}`;
+        list.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
